@@ -2,10 +2,16 @@ const mongoose  = require('mongoose');
 const bcrypt    = require('bcrypt');
 
 const userSchema = new mongoose.Schema({
+  email: { type: String, trim: true, required: true },
+  passwordHash: { type: String, trim: true, required: true },
   username: { type: String, unique: true, required: true },
-  passwordHash: { type: String, required: true}
-  // locations: {}
+  firstName: { type: String, trim: true },
+  lastName: { type: String, trim: true },
+  scrapbooks: [{ type: mongoose.Schema.ObjectId, ref: 'Scrapbook' }]
+}, {
+  timestamps: true
 });
+
 userSchema
   .virtual('password')
   .set(setPassword);
@@ -20,15 +26,13 @@ userSchema
 
 userSchema.methods.validatePassword = validatePassword;
 
-module.exports = mongoose.model('User', userSchema);
-
-// userSchema.set('toJSON', {
-//   transform: function(doc, ret) {
-//     delete ret.passwordHash;
-//     delete ret.__v;
-//     return ret;
-//   }
-// });
+userSchema.set('toJSON', {
+  transform: function(doc, ret) {
+    delete ret.passwordHash;
+    delete ret.__v;
+    return ret;
+  }
+});
 
 function setPassword(value){
   this._password    = value;
@@ -58,3 +62,5 @@ function validatePasswordHash() {
 function validatePassword(password){
   return bcrypt.compareSync(password, this.passwordHash);
 }
+
+module.exports = mongoose.model('User', userSchema);
