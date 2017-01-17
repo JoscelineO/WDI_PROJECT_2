@@ -17,7 +17,16 @@ function authenticationsRegister(req, res) {
 }
 
 function authenticationsLogin(req, res) {
-  User.findOne( { username: req.body.username }, (err, user) => {
+  User
+  .findOne({ email: req.body.email })
+  .populate({
+    path: 'scrapbooks',
+    populate: {
+      path: 'entries',
+      model: 'Entry'
+    }
+  })
+  .exec((err, user) => {
     if (err) return res.status(500).json({ message: 'Something went wrong '});
     if (!user || !user.validatePassword(req.body.password)) {
       return res.status(401).json({ message: 'Unauthorized' });

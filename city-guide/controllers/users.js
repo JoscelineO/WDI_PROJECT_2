@@ -8,7 +8,7 @@ function usersIndex(req, res) {
     populate: {
       path: 'entries',
       model: 'Entry'
-    } 
+    }
   })
   .exec((err, users) => {
     if (err) return res.status(500).json({ message: 'Something went wrong' });
@@ -17,7 +17,17 @@ function usersIndex(req, res) {
 }
 
 function usersShow(req, res) {
-  User.findById(req.params.id, (err, user) => {
+  User
+  .findById(req.params.id)
+  .populate({
+    path: 'scrapbooks',
+    populate: {
+      path: 'entries',
+      model: 'Entry'
+    }
+  })
+  .exec((err, user) => {
+    console.log(err);
     if (err) return res.status(500).json({ message: 'Something went wrong' });
     if (!user) return res.status(404).json({ message: 'No user'});
     return res.status(200).json(user);

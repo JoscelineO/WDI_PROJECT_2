@@ -9,6 +9,7 @@ const Scrapbook = require('../models/scrapbook');
 // Require controllers
 const users          = require('../controllers/users');
 const authentication = require('../controllers/authentication');
+const entry          = require('../controllers/entries');
 
 // Page for registering
 router.route('/register')
@@ -23,5 +24,9 @@ router.route('/users')
   .get(users.index);
 router.route('/user/:id')
   .get(users.show);
+
+// Create entries
+router.route('/users/:id/scrapbook/:id')
+  .post(entry.create);
 
 module.exports = router;
