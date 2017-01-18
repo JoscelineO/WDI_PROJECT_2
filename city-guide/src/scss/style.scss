@@ -1,9 +1,73 @@
 body {
   margin: 0;
+  font-family: 'Alegreya Sans SC', sans-serif;
+  background-color: #F8F8F8;
+}
+
+body .model-open {
+  background-color: #F8F8F8;
 }
 
 #map {
   width: 100%;
   height: 95vh;
   margin: 0 auto;
+}
+
+.navbar {
+  margin-bottom: 0px;
+}
+
+.navbar-brand {
+  font-size: 25px;
+}
+
+.navbar-nav li a {
+  font-size: 17px;
+}
+
+//Modals
+
+.modal-title {
+  font-size: 25px;
+}
+
+.title {
+  font-size: 18px;
+}
+
+.description {
+  font-size: 15px;
+}
+
+.modal-content {
+  background-color: F8F8F8;
+}
+
+.scrapbook-title {
+  margin-top: 0px;
+  margin-bottom: 0px;
+  font-size: 20px
+}
+
+.scrapbook-location {
+  margin-top: 0px;
+  font-size: 15px;
+}
+
+.entries-tag {
+  margin-bottom: 0px;
+}
+
+.entries {
+  margin-bottom: 0px;
+  font-size: 15px;
+}
+
+.add-entry {
+
+}
+
+.add-scrapbook {
+
 }

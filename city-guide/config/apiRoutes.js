@@ -9,7 +9,8 @@ const Scrapbook = require('../models/scrapbook');
 // Require controllers
 const users          = require('../controllers/users');
 const authentication = require('../controllers/authentication');
-const entry          = require('../controllers/entries');
+const entries        = require('../controllers/entries');
+const scrapbooks     = require('../controllers/scrapbooks');
 
 // Page for registering
 router.route('/register')
@@ -22,11 +23,15 @@ router.route('/login')
 // List of all users
 router.route('/users')
   .get(users.index);
-router.route('/user/:id')
+router.route('/users/:id')
   .get(users.show);
 
+// Create scrapbook
+router.route('/users/:id/scrapbooks')
+  .post(scrapbooks.create);
+
 // Create entries
-router.route('/users/:id/scrapbook/:id')
-  .post(entry.create);
+router.route('/scrapbooks/:id/entries')
+  .post(entries.create);
 
 module.exports = router;

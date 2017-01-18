@@ -11,7 +11,9 @@ App.init = function() {
   $('.logout').on('click', this.logout.bind(this));
   $('body').on('click', '.scrapbook-focus', this.plotEntry);
   $('body').on('click', '.add-entry', this.addEntry);
-  $('body').on('click', 'add-scrapbook', this.addScrapbook);
+  $('body').on('click', '.add-scrapbook', this.addScrapbook);
+  $('body').on('click', 're-plot', this.plotScrapbooks);
+  $('.scrapbooks').on('click', this.scrapbooksModal.bind(this));
   this.markerArray = [];
   this.$body.on('submit', 'form', this.handleForm);
 
@@ -25,21 +27,34 @@ App.init = function() {
 App.loggedInState = function(){
   $('.loggedIn').show();
   $('.loggedOut').hide();
-  App.plotScrapbooks();
+  App.fetchUserFromToken(App.plotScrapbooks.bind(App));
+};
+
+App.fetchUserFromToken = function(callback){
+  const token   = App.getToken()
+  const payload = token.split('.')[1];
+  const decode  = JSON.parse(atob(payload));
+  const user_id = decode.id;
+  this.ajaxRequest(`/api/users/${user_id}`, 'get', null, data => {
+    App.user = data;
+    callback();
+  });
 };
 
 App.loggedOutState = function(){
   $('.loggedIn').hide();
   $('.loggedOut').show();
+  this.mapSetup();
 };
 
 App.mapSetup = function() {
   const canvas = document.getElementById('map');
 
   const mapOptions = {
-    zoom: 4,
-    center: new google.maps.LatLng(51.506178,-0.088369),
-    mapTypeId: google.maps.MapTypeId.ROADMAP
+    zoom: 3,
+    center: new google.maps.LatLng(40.673825, 16.898852),
+    mapTypeId: google.maps.MapTypeId.ROADMAP,
+    styles: [{"featureType":"administrative","elementType":"labels.text.fill","stylers":[{"color":"#444444"}]},{"featureType":"landscape","elementType":"all","stylers":[{"color":"#f2f2f2"}]},{"featureType":"poi","elementType":"all","stylers":[{"visibility":"off"}]},{"featureType":"poi.park","elementType":"geometry.fill","stylers":[{"visibility":"on"},{"color":"#6bb3a5"}]},{"featureType":"road","elementType":"all","stylers":[{"saturation":-100},{"lightness":45}]},{"featureType":"road.highway","elementType":"all","stylers":[{"visibility":"simplified"}]},{"featureType":"road.highway","elementType":"geometry.fill","stylers":[{"visibility":"on"},{"color":"#ffdc7d"}]},{"featureType":"road.arterial","elementType":"labels.icon","stylers":[{"visibility":"off"}]},{"featureType":"transit","elementType":"all","stylers":[{"visibility":"off"}]},{"featureType":"water","elementType":"all","stylers":[{"color":"#43b3cb"},{"visibility":"on"}]}]
   };
 
   this.map = new google.maps.Map(canvas, mapOptions);
@@ -76,7 +91,7 @@ App.register = function(e) {
     </div>
     <div class="modal-footer">
     <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-    <button type="submit" class="btn btn-primary">Save changes</button>
+    <button type="submit" class="btn btn-primary">Register</button>
     </div>
     </form>
   `);
@@ -89,14 +104,14 @@ App.login = function(e) {
   <form method="post" action="/login">
   <div class="modal-header">
   <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-  <h4 class="modal-title">Login</h4>
+  <h4 class="modal-title site-font">Login</h4>
   </div>
   <div class="modal-body">
   <div class="form-group">
-  <input class="form-control" type="text" name="email" placeholder="Email">
+  <input class="form-control site-font" type="text" name="email" placeholder="Email">
   </div>
   <div class="form-group">
-  <input class="form-control" type="password" name="password" placeholder="Password">
+  <input class="form-control site-font" type="password" name="password" placeholder="Password">
   </div>
   </div>
   <div class="modal-footer">
@@ -106,7 +121,6 @@ App.login = function(e) {
   </form>
   `);
   $('.modal').modal('show');
-  $('.scrapbooks').on('click', this.scrapbooksModal.bind(this));
 };
 
 App.logout = function(e) {
@@ -117,64 +131,101 @@ App.logout = function(e) {
 
 // You might move this into loggedInState?!
 App.plotScrapbooks = function() {
+  console.log("Getting scrapbooks yo")
+
   $.each(this.user.scrapbooks, (index, scrapbook) => {
+    // const icon = {
+    //   url: '/images/pin-orange.png',
+    //   scaledSize: new google.maps.Size(22, 22),
+    //   origin: new google.maps.Point(0,0),
+    //   anchor: new google.maps.Point(0, 0)
+    // };
     const latlng = new google.maps.LatLng(scrapbook.lat, scrapbook.lng);
     const marker = new google.maps.Marker({
       position: latlng,
       map: this.map
+      // icon: icon
     });
     App.markerArray.push(marker);
-    // Havent done the modal yet... Done now I think???
+    App.AddModalForScrapbook(scrapbook, marker);
   });
 };
 
 App.scrapbooksModal = function(e) {
   if (e) e.preventDefault();
-  const url = `${this.apiUrl}/user/${this.user._id}`;
-
-  return this.ajaxRequest(url, 'get', null, data => { // what is null about?
-    var stringToAdd = '';
-    $.each(data.scrapbooks, (index, scrapbook) => {
-      stringToAdd += `<h2><a class="scrapbook-focus" data-id="${scrapbook._id}">${scrapbook.title}</a></h2>
-      <button type="button" class="btn btn-default add-entry" data-id="${scrapbook._id}">Add Entry</button>`;
-      if(scrapbook.entries.length){
-        stringToAdd += `
-        <h4>Entries:</h4>`;
-        $.each(scrapbook.entries, (index, entry) => {
-          stringToAdd += `
-          <p>${entry.title}</p>`;
-        });
-      }
-    });
-    $('.modal-content').html(`
-      <div class="modal-header">
+  var stringToAdd = '';
+  $.each(App.user.scrapbooks, (index, scrapbook) => {
+    stringToAdd += `<p class="scrapbook-title"><a class="scrapbook-focus" data-id="${scrapbook._id}">${scrapbook.title}</a></p>
+    <p class="scrapbook-location">${scrapbook.location}</p>
+    `;
+  });
+  $('.modal-content').html(`
+    <div class="modal-header">
       <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-      <h4 class="modal-title">Your Scrapbooks</h4>
-      </div>
-      <div class="modal-body">
+      <h2 class="modal-title site-font">Your Scrapbooks</h2>
+    </div>
+    <div class="modal-body">
       ${stringToAdd}
-      </div>
-      <div class="modal-footer">
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-default add-scrapbook site-font" data-id="${this.user._id}">Add Scrapbook</button>
+    </div>
+  `);
+  $('.modal').modal('show');
+};
 
-      <button type="button" class="btn btn-default add-scrapbook" data-id="${this.user._id}">Add Scrapbook</button>
-      </div>
+App.AddModalForScrapbook = function(scrapbook, marker) {
+  google.maps.event.addListener(marker, 'click', () => {
+    let stringToAdd = '';
+
+    $.each(scrapbook.entries, (index, entry) => {
+      stringToAdd += `<p class="entry-title"><a class="entry-focus" data-id="${entry._id}">${entry.title}</a></p>
+      <p class="scrapbook-location">${entry.location}</p>
+      `;
+    });
+
+    $('.modal-content').html(`
+    <div class="modal-header">
+    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+    <h4 class="modal-title">${ scrapbook.location }</h4>
+    </div>
+    <div class="modal-body">
+    <p class="title">${ scrapbook.title }</p>
+    <p class="description">${ scrapbook.description }</p>
+    <div class="entries">
+      ${stringToAdd}
+    </div>
+    <button type="button" class="btn btn-default add-entry" data-id="${scrapbook._id}">Add Entry</button>
+    </div>
     `);
     $('.modal').modal('show');
   });
 };
 
 App.plotEntry = function() {
-  console.log(this);
+  // Find that scrapbook
   const scrapbook = App.user.scrapbooks.filter(scrapbook => {
-    return scrapbook._id = $(this).data('id');
+    return scrapbook._id === $(this).data('id');
   })[0];
+
   $('.modal').modal('hide');
-  //removing scrapbook pins
+
+  // Removing scrapbook pins
   for (var i = 0; i < App.markerArray.length; i++) {
     App.markerArray[i].setMap(null);
   }
+
+  // Show scrapbook marker
+  const scrapbookMarker = new google.maps.Marker({
+    position: {lat: scrapbook.lat, lng: scrapbook.lng},
+    map: App.map
+    // icon: icon
+  });
+
+  App.AddModalForScrapbook(scrapbook, scrapbookMarker);
+
   App.map.setCenter({ lat: scrapbook.lat, lng: scrapbook.lng });
-  App.map.setZoom(12);
+  App.map.setZoom(11);
 
   $.each(scrapbook.entries, (index, entry) => {
     const latlng = new google.maps.LatLng(entry.lat, entry.lng);
@@ -194,8 +245,8 @@ App.addModalForEntrys = function(entry, marker) {
     <h4 class="modal-title">${ entry.location }</h4>
     </div>
     <div class="modal-body">
-    <h5>${ entry.title }</h5>
-    <p>${ entry.description }</p>
+    <p class="title">${ entry.title }</p>
+    <p class="description">${ entry.description }</p>
     </div>
     `);
     $('.modal').modal('show');
@@ -203,14 +254,12 @@ App.addModalForEntrys = function(entry, marker) {
 };
 
 App.addScrapbook = function(e) {
-  console.log(this.user);
   if (e) e.preventDefault();
-
   $('.modal-content').html(`
-  <form method="post" action="/users/:id">
+  <form method="post" action="/users/${App.user._id}/scrapbooks">
   <div class="modal-header">
   <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-  <h4 class="modal-title">New Entry</h4>
+  <h4 class="modal-title">Add New Scrapbook</h4>
   </div>
   <div class="modal-body">
   <div class="form-group">
@@ -230,11 +279,16 @@ App.addScrapbook = function(e) {
   </div>
   </div>
   <div class="modal-footer">
-  <button type="submit" class="btn btn-primary">Add</button>
+  <button type="submit" class="btn btn-primary re-plot">Add Scrapbook</button>
   </div>
   </form>
   `);
   $('.modal').modal('show');
+
+  // ?
+  setTimeout(function(){
+    App.fetchUserFromToken(App.plotScrapbooks.bind(App));
+  }, 2000);
 };
 
 
@@ -247,10 +301,10 @@ App.addEntry = function(e) {
 // find the scrapbook by id in callback call scrapbook_id.entries
 
   $('.modal-content').html(`
-  <form method="post" action="/users/:id/scrapbook/${scrapbook._id}">
+  <form method="post" action="/scrapbooks/${scrapbook._id}/entries">
   <div class="modal-header">
   <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-  <h4 class="modal-title">New Entry</h4>
+  <h4 class="modal-title">Add New Entry</h4>
   </div>
   <div class="modal-body">
   <div class="form-group">
@@ -270,7 +324,7 @@ App.addEntry = function(e) {
   </div>
   </div>
   <div class="modal-footer">
-  <button type="submit" class="btn btn-primary">Add</button>
+  <button type="submit" class="btn btn-primary">Add Entry</button>
   </div>
   </form>
   `);
@@ -285,16 +339,14 @@ App.handleForm = function(e){
   const data   = $(this).serialize();
 
   return App.ajaxRequest(url, method, data, data => {
-    if (data.token) App.setToken(data.token);
-    if (data.user) {
-      App.user = data.user;
+    if (data.token) {
+      App.setToken(data.token);
       App.loggedInState();
     }
     $('.modal').modal('hide');
   });
 };
 
-//what is going on here?
 App.ajaxRequest = function(url, method, data, callback){
   return $.ajax({
     url,
