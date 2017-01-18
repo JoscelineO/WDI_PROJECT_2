@@ -193,6 +193,7 @@ App.AddModalForScrapbook = function(scrapbook, marker) {
     <p class="title">${ scrapbook.title }</p>
     <p class="description">${ scrapbook.description }</p>
     <div class="entries">
+    <p>Entries</p>
       ${stringToAdd}
     </div>
     <button type="button" class="btn btn-default add-entry" data-id="${scrapbook._id}">Add Entry</button>
