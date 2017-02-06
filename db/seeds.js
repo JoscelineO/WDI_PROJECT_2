@@ -1,7 +1,7 @@
 const mongoose   = require('mongoose');
 const Promise    = require('bluebird');
 const async      = require('async');
-mongoose.Promise = Promise;
+mongoose.Promise = Promise; //huh?
 const config     = require('../config/config');
 
 // Require Models

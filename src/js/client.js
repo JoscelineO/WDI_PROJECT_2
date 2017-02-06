@@ -4,7 +4,7 @@ const google = google;
 App.init = function() {
   this.mapSetup();
 
-  this.apiUrl = 'http://localhost:3000/api';
+  this.apiUrl = `${window.location.origin}/api`;
   this.$body  = $('body');
   $('.register').on('click', this.register.bind(this));
   $('.login').on('click', this.login.bind(this));

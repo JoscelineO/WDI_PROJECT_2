@@ -23,6 +23,7 @@ router.route('/login')
 // List of all users
 router.route('/users')
   .get(users.index);
+//Page for one user
 router.route('/users/:id')
   .get(users.show);
 
